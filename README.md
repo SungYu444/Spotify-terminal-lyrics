@@ -10,7 +10,7 @@ Display real-time lyrics for whatever is playing on **Spotify** (or any streamin
   ██   ██ ███████ ███████ ███████  ██████
 ```
 
-Works with **Spotify, YouTube Music, VLC, and any MPRIS-compatible player** via playerctl. Lyrics are fetched automatically from [LRCLIB](https://lrclib.net) (with syncedlyrics as a fallback — pulling from NetEase, Musixmatch, and more). No local music library required.
+Works with **Spotify** on macOS (via AppleScript) and **Spotify, YouTube Music, VLC, and any MPRIS-compatible player** on Linux (via playerctl). Lyrics are fetched automatically from [LRCLIB](https://lrclib.net) (with syncedlyrics as a fallback — pulling from NetEase, Musixmatch, and more). No local music library required.
 
 > **Note:** Word-level timing accuracy depends on the song — faster lyrics tend to sync better. Less mainstream tracks may not be in LRCLIB.
 
@@ -18,10 +18,15 @@ Works with **Spotify, YouTube Music, VLC, and any MPRIS-compatible player** via 
 
 ## Dependencies
 
-**System:**
+**macOS:**
 - `python >= 3.12`
-- `ffmpeg` (provides ffprobe)
-- `playerctl`
+- `ffmpeg` — `brew install ffmpeg`
+- Spotify desktop app (AppleScript is used to read playback state)
+
+**Linux:**
+- `python >= 3.12`
+- `ffmpeg` — `sudo pacman -S ffmpeg` / `sudo apt install ffmpeg`
+- `playerctl` — `sudo pacman -S playerctl` / `sudo apt install playerctl`
 
 **Python (installed automatically by `setup.sh`):**
 - `pyyaml` — required
@@ -43,11 +48,11 @@ bash setup.sh
 
 Make sure `~/.local/bin` is in your PATH:
 ```bash
+# bash/zsh — add to ~/.zshrc or ~/.bashrc to make it permanent
+export PATH="$HOME/.local/bin:$PATH"
+
 # fish
 fish_add_path ~/.local/bin
-
-# bash/zsh
-export PATH="$HOME/.local/bin:$PATH"
 ```
 
 ---
@@ -88,7 +93,7 @@ Steps 1 and 2 are one-time setup per library. `lrc-vis` is the daily driver.
 
 **`lrc-processor`** takes standard LRC files (phrase-level timing) and splits long phrases at natural boundaries, then optionally converts to word-level WLRC format using even distribution or librosa onset detection.
 
-**`lrc-vis`** hooks into your media player via playerctl (MPRIS), finds the matching lyrics for the current track (locally or by fetching online), and renders them as large block letters centered in the terminal. Handles seeking, pausing, and track changes automatically.
+**`lrc-vis`** hooks into your media player (AppleScript on macOS, playerctl/MPRIS on Linux), finds the matching lyrics for the current track (locally or by fetching online), and renders them as large block letters centered in the terminal. Handles seeking, pausing, and track changes automatically.
 
 ---
 

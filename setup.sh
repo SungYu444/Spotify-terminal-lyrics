@@ -22,11 +22,13 @@ echo
 # ---------------------------------------------------------------------------
 echo "[1/4] Checking Python dependencies..."
 
+PIP="$(command -v pip3 || command -v pip)"
+
 check_pip() {
     python3 -c "import $1" 2>/dev/null && echo "  ✓ $1" || {
         echo "  installing $1..."
-        pip install "$2" --break-system-packages --quiet 2>/dev/null \
-            || pip install "$2" --user --quiet
+        "$PIP" install "$2" --break-system-packages --quiet 2>/dev/null \
+            || "$PIP" install "$2" --user --quiet
     }
 }
 
@@ -36,9 +38,9 @@ check_pip syncedlyrics syncedlyrics
 
 echo
 read -rp "Install librosa for onset detection (optional, ~200MB)? [y/N] " librosa_ans
-if [[ "${librosa_ans,,}" == "y" ]]; then
-    pip install librosa --break-system-packages --quiet 2>/dev/null \
-        || pip install librosa --user --quiet
+if [[ "$(echo "$librosa_ans" | tr '[:upper:]' '[:lower:]')" == "y" ]]; then
+    "$PIP" install librosa --break-system-packages --quiet 2>/dev/null \
+        || "$PIP" install librosa --user --quiet
     echo "  ✓ librosa"
 fi
 
@@ -53,8 +55,8 @@ check_cmd() {
         || echo "  ✗ $1 not found — install with: $2"
 }
 
-check_cmd ffprobe "sudo pacman -S ffmpeg"
-check_cmd playerctl "sudo pacman -S playerctl"
+check_cmd ffprobe "brew install ffmpeg"
+check_cmd playerctl "brew install playerctl  # NOTE: playerctl is Linux/MPRIS-only; not available on macOS"
 
 # ---------------------------------------------------------------------------
 # Install package into ~/.config/lrc-tools/lrc_tools/
@@ -117,8 +119,9 @@ write_stub lrc-vis        lrc_vis_cli
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
     echo
     echo "  ⚠ $BIN_DIR is not in your PATH"
-    echo "  Add to ~/.config/fish/config.fish:"
-    echo "    fish_add_path $BIN_DIR"
+    echo "  Add one of the following to your shell config:"
+    echo "    bash/zsh: export PATH=\"$BIN_DIR:\$PATH\""
+    echo "    fish:     fish_add_path $BIN_DIR"
 fi
 
 # ---------------------------------------------------------------------------
