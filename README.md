@@ -1,6 +1,6 @@
-# lrc-tools
+# Spotify Terminal Lyrics
 
-Terminal lyrics visualizer with word-level sync. Hooks into any MPRIS-compatible media player via playerctl and displays the current lyric as large ASCII block letters in your terminal, one word at a time.
+Display real-time lyrics for whatever is playing on **Spotify** (or any streaming platform) — right in your terminal, as large ASCII block letters, synced word by word.
 
 ```
   ██   ██ ███████ ██      ██       ██████
@@ -10,7 +10,7 @@ Terminal lyrics visualizer with word-level sync. Hooks into any MPRIS-compatible
   ██   ██ ███████ ███████ ███████  ██████
 ```
 
-Lyrics are fetched automatically from [LRCLIB](https://lrclib.net) (with syncedlyrics as a fallback). You can also pre-download and process your library for better word-level timing.
+Works with **Spotify, YouTube Music, VLC, and any MPRIS-compatible player** via playerctl. Lyrics are fetched automatically from [LRCLIB](https://lrclib.net) (with syncedlyrics as a fallback — pulling from NetEase, Musixmatch, and more). No local music library required.
 
 > **Note:** Word-level timing accuracy depends on the song — faster lyrics tend to sync better. Less mainstream tracks may not be in LRCLIB.
 
@@ -34,8 +34,8 @@ Lyrics are fetched automatically from [LRCLIB](https://lrclib.net) (with syncedl
 ## Install
 
 ```bash
-git clone https://github.com/tacoproz1/tacos-terminal-lyrics
-cd tacos-terminal-lyrics
+git clone https://github.com/Sungyu444/Spotify-terminal-lyrics
+cd Spotify-terminal-lyrics
 bash setup.sh
 ```
 
@@ -54,13 +54,13 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ## Usage
 
-### Just run it (lyrics fetched online automatically)
+### Just run it — works with Spotify out of the box
 
 ```bash
 lrc-vis
 ```
 
-No setup needed — it will look up lyrics for whatever is playing.
+No configuration needed. Start playing something on Spotify (or any streaming platform) and run `lrc-vis` — it will detect the current track and fetch lyrics automatically.
 
 ### With a pre-processed local library (better timing)
 
