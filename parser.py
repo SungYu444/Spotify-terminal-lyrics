@@ -70,6 +70,24 @@ def parse_lrc_simple(lrc_path: Path) -> List[Tuple[float, str]]:
     return sorted(lines, key=lambda x: x[0])
 
 
+def parse_lrc_simple_from_string(content: str) -> List[Tuple[float, str]]:
+    """Parse LRC content from a string into simple tuple format."""
+    lines = []
+    pattern = re.compile(r'\[(\d{1,2}):(\d{2}\.\d{1,3})\](.+)')
+    for line in content.splitlines():
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        match = pattern.match(line)
+        if match:
+            minutes, seconds, text = match.groups()
+            timestamp = int(minutes) * 60 + float(seconds)
+            text = text.strip()
+            if text:
+                lines.append((timestamp, text))
+    return sorted(lines, key=lambda x: x[0])
+
+
 def format_timestamp(seconds: float) -> str:
     """
     Format seconds into LRC timestamp format [MM:SS.xx]

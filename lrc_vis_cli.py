@@ -10,8 +10,8 @@ def main():
     parser = argparse.ArgumentParser(
         description='LRC Lyrics Visualizer with Playerctl integration'
     )
-    parser.add_argument('--lrc-dir', type=Path, required=True,
-                        help='Directory containing LRC files')
+    parser.add_argument('--lrc-dir', type=Path, default=None,
+                        help='Directory containing LRC files (optional, lyrics fetched online if not found)')
     parser.add_argument('--audio-dir', type=Path,
                         help='Directory containing audio files')
     parser.add_argument('--wlrc', action='store_true',
@@ -28,7 +28,7 @@ def main():
     args = parser.parse_args()
 
     lrc_dir = args.lrc_dir
-    if not lrc_dir.exists():
+    if lrc_dir is not None and not lrc_dir.exists():
         print(f"Error: LRC directory {lrc_dir} does not exist", file=sys.stderr)
         return 1
 
@@ -52,7 +52,10 @@ def main():
     font_data = get_font(args.font)
 
     print(f"Starting LRC visualizer...")
-    print(f"LRC directory: {lrc_dir}")
+    if lrc_dir is not None:
+        print(f"LRC directory: {lrc_dir}")
+    else:
+        print(f"LRC directory: (none — lyrics will be fetched online)")
     print(f"Font: {args.font}")
     print(f"Press Ctrl+C to exit")
     print()

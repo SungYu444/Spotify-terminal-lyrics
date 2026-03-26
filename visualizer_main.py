@@ -65,7 +65,7 @@ def position_monitor(sync_data: SyncData, get_position_func, get_track_func, get
 
 
 def run_visualizer(
-    lrc_dir: Path,
+    lrc_dir: Optional[Path] = None,
     audio_dir: Optional[Path] = None,
     is_wlrc: bool = False,
     font_data: dict = None,
@@ -73,15 +73,20 @@ def run_visualizer(
 ):
     """Run the LRC visualizer main loop."""
     from .visualizer_player import get_position, get_track, get_status, get_audio_file_info
-    from .visualizer_display import display_text, display_waiting, hide_cursor, show_cursor, clear_screen
-    from .parser import parse_lrc_simple
+    from .visualizer_display import display_text, display_waiting, hide_cursor, show_cursor, clear_screen, load_palette
+    from .parser import parse_lrc_simple, parse_lrc_simple_from_string
     from .audio import find_lrc_for_audio
+    from .puller import search_lrclib, search_syncedlyrics
 
     hide_cursor()
     clear_screen()
     display_waiting()
 
+    palette = load_palette()
+
     sync_data = SyncData()
+    lyrics_cache: dict = {}
+    failed_tracks: set = set()
 
     monitor_thread = threading.Thread(
         target=position_monitor,
@@ -103,24 +108,49 @@ def run_visualizer(
             song_changed = last_title and title != last_title
             last_title = title
 
-            audio_file = get_audio_file_info()
-            lrc = find_lrc_for_audio(
-                audio_file if audio_file else Path(title),
-                lrc_dir,
-                artist,
-                title,
-                is_wlrc=is_wlrc
-            )
+            cache_key = f"{artist}|||{title}"
 
-            if not lrc:
-                time.sleep(1)
+            if cache_key in failed_tracks:
+                time.sleep(2)
+                continue
+
+            if cache_key in lyrics_cache:
+                lines = lyrics_cache[cache_key]
+            else:
+                lines = None
+
+                if lrc_dir is not None:
+                    audio_file = get_audio_file_info()
+                    lrc = find_lrc_for_audio(
+                        audio_file if audio_file else Path(title),
+                        lrc_dir,
+                        artist,
+                        title,
+                        is_wlrc=is_wlrc
+                    )
+                    if lrc:
+                        lines = parse_lrc_simple(lrc)
+
+                if not lines:
+                    results = search_lrclib(artist, title)
+                    content = None
+                    if results:
+                        content = results[0].get('syncedLyrics') or results[0].get('plainLyrics')
+                    if not content:
+                        content = search_syncedlyrics(artist, title)
+                    if content:
+                        lines = parse_lrc_simple_from_string(content)
+
+                if lines:
+                    lyrics_cache[cache_key] = lines
+                else:
+                    failed_tracks.add(cache_key)
+
+            if not lines:
+                time.sleep(2)
                 continue
 
             sync_data.current_title = title
-            lines = parse_lrc_simple(lrc)
-            if not lines:
-                time.sleep(1)
-                continue
 
             pos = get_position()
             if pos is None:
@@ -171,14 +201,25 @@ def run_visualizer(
                 elapsed = time.time() - start_time
                 current_pos = start_pos + elapsed
 
-                _, text = lines[idx]
-                display_text(text, use_block_letters=True, font_data=font_data, clear=True)
+                lyric_start, text = lines[idx]
+                words = text.split() or ['']
 
                 if idx + 1 < len(lines):
                     next_start, _ = lines[idx + 1]
-                    if current_pos >= next_start:
-                        idx += 1
-                        continue
+                    lyric_duration = next_start - lyric_start
+                else:
+                    next_start = None
+                    lyric_duration = len(words) * 1.5  # fallback for last lyric
+
+                time_in_lyric = max(0.0, current_pos - lyric_start)
+                word_duration = lyric_duration / len(words) if len(words) > 0 else lyric_duration
+                word_idx = min(int(time_in_lyric / word_duration), len(words) - 1)
+
+                display_text(words[word_idx], use_block_letters=True, font_data=font_data, clear=True, color=palette[0])
+
+                if next_start is not None and current_pos >= next_start:
+                    idx += 1
+                    continue
 
                 time.sleep(refresh_rate)
 

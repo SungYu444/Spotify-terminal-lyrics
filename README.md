@@ -1,18 +1,6 @@
 # lrc-tools
 
-[EVERY FILE IS VIBECODED IF THAT WASNT OBVIOUS ENOUGH,SORRY]
-
-/\ /\ /\ /\ /\ /\ /\ /\
-oh yea and because of this i recommend to use ai or someone else for troubleshooting cause i dont offer support for this project as of now
-
-ALSO THIS BUILD SUCKSSSS, in regards to the lyric accuracy (faster the spoken lyrics in song the more accurate the wlrc will be)
-also non mainstream songs occasionally dont get pulled cause they are simply not in lrclib
-there are of course tons of small other issues, which i will have fixed eventually
-
-
-Terminal lyrics visualizer with word-level sync. Displays song lyrics in large
-ASCII block letters in your terminal, synchronized to whatever is playing in
-your media player.
+Terminal lyrics visualizer with word-level sync. Hooks into any MPRIS-compatible media player via playerctl and displays the current lyric as large ASCII block letters in your terminal, one word at a time.
 
 ```
   ██   ██ ███████ ██      ██       ██████
@@ -22,80 +10,94 @@ your media player.
   ██   ██ ███████ ███████ ███████  ██████
 ```
 
-## Dependencies (install these in a venv with pip, or get them off the aur)
+Lyrics are fetched automatically from [LRCLIB](https://lrclib.net) (with syncedlyrics as a fallback). You can also pre-download and process your library for better word-level timing.
 
-**Required:**
+> **Note:** Word-level timing accuracy depends on the song — faster lyrics tend to sync better. Less mainstream tracks may not be in LRCLIB.
+
+---
+
+## Dependencies
+
+**System:**
 - `python >= 3.12`
-- `python-pyyaml`
 - `ffmpeg` (provides ffprobe)
 - `playerctl`
 
-**Optional but you should really really get it:**
-- `python-mutagen` — reads embedded audio tags for better lyrics matching
-- `python-syncedlyrics` — fallback lyrics source (NetEase, etc.)
-- `python-librosa` — onset detection for more accurate word-level timing
+**Python (installed automatically by `setup.sh`):**
+- `pyyaml` — required
+- `mutagen` — reads embedded audio tags for better lyrics matching
+- `syncedlyrics` — fallback lyrics source (NetEase, etc.)
+- `librosa` — onset detection for more accurate word timing (optional, ~200MB)
+
+---
 
 ## Install
 
-### AUR (havent made it yet, prolly wont though)
-```bash
-paru -S lrc-tools
-```
-
-### Manual (do this)
 ```bash
 git clone https://github.com/tacoproz1/tacos-terminal-lyrics
 cd tacos-terminal-lyrics
 bash setup.sh
-pip install pyyaml mutagen syncedlyrics --break-system-packages
 ```
 
-## Quickstart
+`setup.sh` installs Python dependencies, copies the package to `~/.config/lrc-tools/`, creates command stubs in `~/.local/bin/`, and sets up data directories at `~/.local/share/lrc-tools/lyrics/`.
+
+Make sure `~/.local/bin` is in your PATH:
+```bash
+# fish
+fish_add_path ~/.local/bin
+
+# bash/zsh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+---
+
+## Usage
+
+### Just run it (lyrics fetched online automatically)
 
 ```bash
-mkdir -p ~/lyrics/raw ~/lyrics/processed
+lrc-vis
+```
 
-# 1. Download lyrics for your music library (if using bash and not fish run export PATH="$HOME/.local/bin:$PATH")
-lrc-fetch --audio-dir ~/music --output-dir ~/lyrics/raw
+No setup needed — it will look up lyrics for whatever is playing.
+
+### With a pre-processed local library (better timing)
+
+```bash
+# 1. Download lyrics for your music library
+lrc-fetch --audio-dir ~/music --output-dir ~/.local/share/lrc-tools/lyrics/raw
+
 # 2. Process into word-level timing
-lrc-processor --lrc-dir ~/lyrics/raw --audio-dir ~/music \
-              --output-dir ~/lyrics/processed --wlrc
+lrc-processor --lrc-dir ~/.local/share/lrc-tools/lyrics/raw \
+              --audio-dir ~/music \
+              --output-dir ~/.local/share/lrc-tools/lyrics/processed \
+              --wlrc
 
-# 3. Start the visualizer, play something in your media player
-lrc-vis --lrc-dir ~/lyrics/processed --wlrc
+# 3. Start the visualizer
+lrc-vis --lrc-dir ~/.local/share/lrc-tools/lyrics/processed --wlrc
 ```
 
 Steps 1 and 2 are one-time setup per library. `lrc-vis` is the daily driver.
 
+---
+
 ## How it works
 
-**`lrc-fetch`** scans your music directory, reads embedded tags (or parses
-filenames), and downloads synced LRC lyrics from [LRCLIB](https://lrclib.net)
-with syncedlyrics as a fallback.
+**`lrc-fetch`** scans your music directory, reads embedded tags (or parses filenames), and downloads synced LRC lyrics from LRCLIB with syncedlyrics as a fallback.
 
-**`lrc-processor`** takes standard LRC files (phrase-level timing) and splits
-long phrases at natural boundaries — commas, conjunctions, duration — and
-optionally converts to word-level WLRC format using even distribution or
-librosa onset detection.
+**`lrc-processor`** takes standard LRC files (phrase-level timing) and splits long phrases at natural boundaries, then optionally converts to word-level WLRC format using even distribution or librosa onset detection.
 
-**`lrc-vis`** hooks into your media player via playerctl (MPRIS), finds the
-matching LRC/WLRC file for the current track, and renders lyrics as large
-block letters centered in the terminal. Handles seeking, pausing, and track
-changes automatically.
+**`lrc-vis`** hooks into your media player via playerctl (MPRIS), finds the matching lyrics for the current track (locally or by fetching online), and renders them as large block letters centered in the terminal. Handles seeking, pausing, and track changes automatically.
 
-## LRC file matching
-
-Output filenames must match audio filenames. `Artist - Title.mp3` →
-`Artist - Title.lrc`. `lrc-fetch` handles this automatically. If you source
-LRC files elsewhere, name them to match.
+---
 
 ## Configuration
 
-Copy `config_example.yaml` to `~/.config/lrc-tools/config.yaml` and pass it
-with `--config`:
+`setup.sh` places a default config at `~/.config/lrc-tools/config.yaml`. Pass it with `--config`:
 
 ```bash
-lrc-vis --config ~/.config/lrc-tools/config.yaml --lrc-dir ~/lyrics/processed --wlrc
+lrc-vis --config ~/.config/lrc-tools/config.yaml --lrc-dir ~/.local/share/lrc-tools/lyrics/processed --wlrc
 ```
 
 Key settings:
@@ -115,16 +117,19 @@ visualizer:
   refresh_rate: 0.05
 ```
 
+---
+
 ## Custom fonts
 
-Fonts are defined in JSON. See `custom_fonts.json` for the format.
+Fonts are defined in JSON. See `~/.config/lrc-tools/custom_fonts.json` for the format.
 
 ```bash
-lrc-vis --lrc-dir ~/lyrics/processed --wlrc \
-        --custom-fonts custom_fonts.json --font mini
+lrc-vis --lrc-dir ~/.local/share/lrc-tools/lyrics/processed --wlrc \
+        --custom-fonts ~/.config/lrc-tools/custom_fonts.json --font mini
 ```
+
+---
 
 ## License
 
 MIT
-# tacos-terminal-lyrics
