@@ -1,4 +1,4 @@
-# Spotify Terminal Lyrics
+# Spotify Terminal Lyrics (THIS IS FOR LINUX, MACOS IS IN THE SECOND BRANCH!!!!)
 
 Display real-time lyrics for whatever is playing on **Spotify** (or any streaming platform) — right in your terminal, as large ASCII block letters, synced word by word.
 
